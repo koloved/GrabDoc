@@ -33,17 +33,18 @@ class Baker(PropertyGroup):
 
     def initialize(self):
         """Initialize baker instance after creation in PropertyCollection."""
+        # NOTE: engine property must exist on class for all instances
+        if not hasattr(self.__class__, 'engine'):
+            self.__class__.engine = EnumProperty(
+                name='Render Engine',
+                items=self.__class__.SUPPORTED_ENGINES,
+                update=self.__class__.apply_render_settings
+            )
+
         if self.index != -1:
             return
         self.set_available_index()
         self.node_setup()
-
-        # NOTE: Unique due to dynamic items/enum
-        self.__class__.engine = EnumProperty(
-            name='Render Engine',
-            items=self.__class__.SUPPORTED_ENGINES,
-            update=self.__class__.apply_render_settings
-        )
 
         self.node_input  = None
         self.node_output = None
@@ -160,9 +161,10 @@ class Baker(PropertyGroup):
             col_set.prop(self, 'reimport')
             col_set.prop(self, 'disable_filtering')
             prop = 'samples'
-            if self.engine == 'blender_workbench':
+            engine = getattr(self, 'engine', None)
+            if engine == 'blender_workbench':
                 prop = 'samples_workbench'
-            elif self.engine == 'cycles':
+            elif engine == 'cycles':
                 prop = 'samples_cycles'
             col_set.prop(self, prop, text='Samples')
             col_set.prop(self, 'contrast')
@@ -345,7 +347,7 @@ class Normals(Baker):
         col = layout.column()
         col.prop(self, 'flip_y')
         if context.scene.gd.engine == 'grabdoc':
-            if self.engine == 'cycles':
+            if getattr(self, 'engine', None) == 'cycles':
                 col.prop(self, 'bevel_weight')
 
     def update_flip_y(self, _context: Context):
